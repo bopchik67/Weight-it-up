@@ -1,0 +1,938 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Weight It Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@700;800&display=swap">
+<style>
+/* Layout: one column. Brass balance scale on top (the stage), controls and results below. Scale tilts with a spring after each answer. */
+:root {
+  --bg: #E7ECF2;
+  --surface: #F5F8FB;
+  --ink: #142033;
+  --muted: #55657A;
+  --line: #CBD5E1;
+  --accent: #2D5BFF;
+  --accent-ink: #FFFFFF;
+  --brass: #C8962E;
+  --brass-deep: #94681A;
+  --steel: #9AA7B8;
+  --steel-deep: #74839A;
+  --good: #11773F;
+  --warn: #9A6000;
+  --bad: #B8302B;
+  --font-display: 'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --font-body: 'Golos Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1520;
+    --surface: #162133;
+    --ink: #E6EDF7;
+    --muted: #97A5BA;
+    --line: #26344A;
+    --accent: #7C9CFF;
+    --accent-ink: #0D1520;
+    --brass: #E2B04A;
+    --brass-deep: #B88628;
+    --steel: #5F7089;
+    --steel-deep: #4A5B73;
+    --good: #4CCB8A;
+    --warn: #E6A93A;
+    --bad: #FF7A72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1520;
+  --surface: #162133;
+  --ink: #E6EDF7;
+  --muted: #97A5BA;
+  --line: #26344A;
+  --accent: #7C9CFF;
+  --accent-ink: #0D1520;
+  --brass: #E2B04A;
+  --brass-deep: #B88628;
+  --steel: #5F7089;
+  --steel-deep: #4A5B73;
+  --good: #4CCB8A;
+  --warn: #E6A93A;
+  --bad: #FF7A72;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 40px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 16px; }
+[hidden] { display: none !important; }
+
+.top { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+.brand { font: 800 15px/1 var(--font-display); letter-spacing: .05em; text-transform: uppercase; }
+.brand span { color: var(--accent); }
+.tools { display: flex; gap: 8px; }
+.tool { appearance: none; background: transparent; color: var(--ink); border: 1.5px solid var(--line); border-radius: 10px; min-height: 36px; padding: 6px 12px; font: 600 13px/1.2 var(--font-body); cursor: pointer; }
+.tool.armed { border-color: var(--bad); color: var(--bad); }
+.tool:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.status { display: flex; gap: 16px; font: 500 13px/1 var(--font-mono); color: var(--muted); }
+.status b { color: var(--ink); font-weight: 700; }
+.progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: -8px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s ease; }
+
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 14px 14px 16px; display: grid; gap: 6px; }
+#scale { display: block; width: 100%; height: auto; }
+#scale .brass { fill: var(--brass); }
+#scale .brass-deep { fill: var(--brass-deep); }
+#scale .steel { fill: var(--steel); }
+#scale .steel-deep { fill: var(--steel-deep); }
+#scale .shadow { fill: var(--ink); opacity: .12; }
+#scale .string { stroke: var(--steel-deep); stroke-width: 1.6; fill: none; stroke-linecap: round; }
+#scale .rim { stroke: var(--brass-deep); stroke-width: 4; stroke-linecap: round; fill: none; }
+#scale .needle { stroke: var(--brass-deep); stroke-width: 3; stroke-linecap: round; }
+#scale .mark { fill: var(--accent); }
+#scale .em { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; text-anchor: middle; fill: var(--ink); }
+#scale .plabel { font: 700 15px var(--font-body); fill: var(--ink); text-anchor: middle; }
+#scale .qbadge { font: 800 30px var(--font-display); fill: var(--accent); text-anchor: middle; }
+#scale .ghost { opacity: .6; }
+
+.caps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 4px; }
+.cap { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cap-r { text-align: right; align-items: flex-end; }
+.cap-k { font: 600 11px/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.cap-name { font: 700 clamp(16px, 4.6vw, 21px)/1.2 var(--font-body); text-wrap: balance; }
+.cap-count { font: 700 clamp(20px, 6vw, 26px)/1.1 var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cap-sub { font: 400 14px/1.3 var(--font-body); color: var(--muted); }
+
+.panel { display: grid; gap: 14px; }
+.lead { margin: 0; font: 700 clamp(20px, 5.4vw, 28px)/1.2 var(--font-display); text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); max-width: 56ch; }
+.fine { margin: 0; color: var(--muted); font-size: 13px; }
+.best { margin: 0; font: 500 14px var(--font-mono); color: var(--ink); }
+
+.seg { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.seg-k { font: 600 12px/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: inline-block; min-width: 56px; text-align: center; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); font: 700 15px var(--font-mono); background: var(--surface); }
+.seg input:checked + span { border-color: var(--accent); color: var(--accent); }
+.seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.btn { appearance: none; border: 0; border-radius: 14px; min-height: 48px; padding: 12px 20px; font: 600 16px/1.2 var(--font-body); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.actions .primary { flex: 1 1 180px; }
+
+.ask { display: grid; gap: 10px; }
+.ask-q { margin: 0; font-weight: 600; font-size: 17px; text-wrap: balance; }
+.lbl { font: 600 12px/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.field { display: flex; align-items: center; gap: 12px; }
+.field input { flex: 1 1 0; min-width: 0; width: 100%; font: 700 30px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; padding: 10px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
+.field input:focus { outline: none; border-color: var(--accent); }
+.field input:disabled { opacity: .7; }
+.unit { flex: 0 1 42%; font-size: 15px; line-height: 1.3; color: var(--muted); overflow-wrap: anywhere; }
+.ask.locked .actions, .ask.locked .hint-btn { display: none; }
+.hint { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px dashed var(--steel-deep); font-size: 15px; }
+.hint b { font-family: var(--font-mono); font-weight: 700; }
+
+.result { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: grid; gap: 14px; }
+.res-top { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.pct { font: 800 clamp(44px, 14vw, 68px)/1 var(--font-display); font-variant-numeric: tabular-nums; display: flex; align-items: baseline; }
+.pct small { font-size: .45em; margin-left: 2px; }
+.res-txt { min-width: 0; }
+.res-txt h2 { margin: 0 0 2px; font: 700 20px/1.25 var(--font-body); text-wrap: balance; }
+.res-txt p { margin: 0; color: var(--muted); }
+.p-good { color: var(--good); }
+.p-warn { color: var(--warn); }
+.p-bad { color: var(--bad); }
+.facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 15px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; text-align: right; font: 500 15px/1.4 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+
+.fin-top { display: grid; gap: 6px; justify-items: start; }
+.eyebrow { margin: 0; font: 600 12px/1 var(--font-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.rank { margin: 0; font: 700 clamp(22px, 6vw, 30px)/1.2 var(--font-display); text-wrap: balance; }
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.row { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.row-t { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.row-p { font: 700 18px var(--font-mono); font-variant-numeric: tabular-nums; }
+.row-n { grid-column: 1 / -1; font: 500 13px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.row-bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.row-bar i { display: block; height: 100%; width: var(--p); background: currentColor; }
+.emo { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+
+@media (prefers-reduced-motion: reduce) { .progress i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Weight <span>It</span> Up</div>
+    <div class="tools" id="tools" hidden>
+      <button class="tool" id="restartBtn" type="button">Заново</button>
+      <button class="tool" id="exitBtn" type="button">В лобби</button>
+    </div>
+  </header>
+  <div class="status" id="status" hidden>
+    <span>Раунд <b id="stRound">1</b>/<b id="stTotal">10</b></span>
+    <span>Среднее <b id="stAvg">—</b></span>
+  </div>
+  <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
+
+  <section class="stage" id="stage" aria-label="Чашечные весы">
+    <svg id="scale" viewBox="0 0 420 320" role="img" aria-label="Чашечные весы с двумя чашами">
+      <ellipse class="shadow" cx="210" cy="306" rx="98" ry="7"/>
+      <path class="steel-deep" d="M122 302 H298 L282 282 H138 Z"/>
+      <rect class="steel" x="203" y="78" width="14" height="208" rx="4"/>
+      <path class="mark" d="M203 4 H217 L210 16 Z"/>
+      <g id="beam">
+        <rect class="brass" x="70" y="65" width="280" height="10" rx="5"/>
+        <line class="needle" x1="210" y1="70" x2="210" y2="24"/>
+        <circle class="brass-deep" cx="70" cy="70" r="5"/>
+        <circle class="brass-deep" cx="350" cy="70" r="5"/>
+      </g>
+      <circle class="brass" cx="210" cy="70" r="11"/>
+      <circle class="brass-deep" cx="210" cy="70" r="4"/>
+      <g id="panL">
+        <path class="string" d="M0 0 L-52 108 M0 0 L52 108"/>
+        <path class="brass" d="M-66 108 H66 Q58 134 0 136 Q-58 134 -66 108 Z"/>
+        <path class="rim" d="M-66 108 H66"/>
+        <g id="itemsL"></g>
+        <g id="lblL"></g>
+      </g>
+      <g id="panR">
+        <path class="string" d="M0 0 L-52 108 M0 0 L52 108"/>
+        <path class="brass" d="M-66 108 H66 Q58 134 0 136 Q-58 134 -66 108 Z"/>
+        <path class="rim" d="M-66 108 H66"/>
+        <g id="itemsR"></g>
+        <g id="lblR"></g>
+      </g>
+    </svg>
+    <div class="caps">
+      <div class="cap cap-l">
+        <span class="cap-k">Левая чаша</span>
+        <span class="cap-name" id="capL">Жираф</span>
+      </div>
+      <div class="cap cap-r">
+        <span class="cap-k">Правая чаша</span>
+        <span class="cap-count" id="capRCount">× ?</span>
+        <span class="cap-sub" id="capRName">теннисных мячей</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="start">
+    <h1 class="lead">Сколько мячей весит жираф?</h1>
+    <div class="seg" role="radiogroup" aria-label="Количество раундов">
+      <span class="seg-k">Раундов</span>
+      <label><input type="radio" name="rounds" value="5"><span>5</span></label>
+      <label><input type="radio" name="rounds" value="10" checked><span>10</span></label>
+      <label><input type="radio" name="rounds" value="20"><span>20</span></label>
+    </div>
+    <div class="actions"><button class="btn primary" id="startBtn" type="button">Играть</button></div>
+    <p class="best" id="best" hidden></p>
+  </section>
+
+  <section class="panel" id="play" hidden>
+    <p class="ask-q">Сколько штук справа уравновесят левую чашу?</p>
+    <div class="ask" id="ask">
+      <label class="lbl" for="guess">Ваш ответ</label>
+      <div class="field">
+        <input id="guess" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="9" placeholder="0">
+        <span class="unit" id="unit"></span>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="weighBtn" type="button" disabled>Взвесить</button>
+        <button class="btn ghost" id="hintBtn" type="button">Подсказка · −25%</button>
+      </div>
+      <p class="hint" id="hint" hidden></p>
+    </div>
+    <div class="result" id="result" hidden aria-live="polite"></div>
+  </section>
+
+  <section class="panel" id="final" hidden></section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Массы в килограммах. f = формы названия: 1 / 2-4 / 5+.
+  var ITEMS = [
+    { e: '🐜', kg: 0.000003, f: ['муравей', 'муравья', 'муравьёв'] },
+    { e: '💧', kg: 0.00005, f: ['капля воды', 'капли воды', 'капель воды'] },
+    { e: '🐝', kg: 0.0001, f: ['пчела', 'пчелы', 'пчёл'] },
+    { e: '📎', kg: 0.001, f: ['скрепка', 'скрепки', 'скрепок'] },
+    { e: '🍬', kg: 0.01, f: ['конфета', 'конфеты', 'конфет'] },
+    { e: '🍇', kg: 0.4, f: ['гроздь винограда', 'грозди винограда', 'гроздей винограда'] },
+    { e: '🍒', kg: 0.008, f: ['вишня', 'вишни', 'вишен'] },
+    { e: '🐁', kg: 0.02, f: ['мышь', 'мыши', 'мышей'] },
+    { e: '🍓', kg: 0.02, f: ['клубничина', 'клубничины', 'клубничин'] },
+    { e: '🍪', kg: 0.03, f: ['печенье', 'печенья', 'печений'] },
+    { e: '🥚', kg: 0.06, f: ['куриное яйцо', 'куриных яйца', 'куриных яиц'] },
+    { e: '🎾', draw: 'tennis', kg: 0.057, f: ['теннисный мяч', 'теннисных мяча', 'теннисных мячей'] },
+    { e: '🥕', kg: 0.07, f: ['морковка', 'морковки', 'морковок'] },
+    { e: '🍩', kg: 0.075, f: ['пончик', 'пончика', 'пончиков'] },
+    { e: '🍫', kg: 0.1, f: ['плитка шоколада', 'плитки шоколада', 'плиток шоколада'] },
+    { e: '🍋', kg: 0.1, f: ['лимон', 'лимона', 'лимонов'] },
+    { e: '🍌', kg: 0.12, f: ['банан', 'банана', 'бананов'] },
+    { e: '🍎', kg: 0.18, f: ['яблоко', 'яблока', 'яблок'] },
+    { e: '📱', kg: 0.19, f: ['смартфон', 'смартфона', 'смартфонов'] },
+    { e: '🥔', kg: 0.2, f: ['картофелина', 'картофелины', 'картофелин'] },
+    { e: '🍊', kg: 0.2, f: ['апельсин', 'апельсина', 'апельсинов'] },
+    { e: '🍔', kg: 0.25, f: ['бургер', 'бургера', 'бургеров'] },
+    { e: '👟', kg: 0.35, f: ['кроссовок', 'кроссовка', 'кроссовок'] },
+    { e: '⚽', kg: 0.43, f: ['футбольный мяч', 'футбольных мяча', 'футбольных мячей'] },
+    { e: '📖', kg: 0.5, f: ['книга', 'книги', 'книг'] },
+    { e: '🍕', kg: 0.1, f: ['кусок пиццы', 'куска пиццы', 'кусков пиццы'] },
+    { e: '💻', kg: 2, f: ['ноутбук', 'ноутбука', 'ноутбуков'] },
+    { e: '🧱', kg: 3.6, f: ['кирпич', 'кирпича', 'кирпичей'] },
+    { e: '🐈', kg: 4.5, f: ['кошка', 'кошки', 'кошек'] },
+    { e: '🍉', kg: 0.7, f: ['долька арбуза', 'дольки арбуза', 'долек арбуза'] },
+    { e: '🚲', kg: 12, f: ['велосипед', 'велосипеда', 'велосипедов'] },
+    { e: '🐕', kg: 30, f: ['лабрадор', 'лабрадора', 'лабрадоров'] },
+    { e: '🐧', kg: 35, f: ['императорский пингвин', 'императорских пингвина', 'императорских пингвинов'] },
+    { e: '🧑', kg: 70, f: ['человек', 'человека', 'человек'] },
+    { e: '🐼', kg: 100, f: ['панда', 'панды', 'панд'] },
+    { e: '🦁', kg: 190, f: ['лев', 'льва', 'львов'] },
+    { e: '🐻', kg: 350, f: ['бурый медведь', 'бурых медведя', 'бурых медведей'] },
+    { e: '🐎', kg: 500, f: ['лошадь', 'лошади', 'лошадей'] },
+    { e: '🐄', kg: 700, f: ['корова', 'коровы', 'коров'] },
+    { e: '🦒', kg: 1200, f: ['жираф', 'жирафа', 'жирафов'] },
+    { e: '🚗', kg: 1500, f: ['автомобиль', 'автомобиля', 'автомобилей'] },
+    { e: '🦛', kg: 1500, f: ['бегемот', 'бегемота', 'бегемотов'] },
+    { e: '🦏', kg: 2300, f: ['носорог', 'носорога', 'носорогов'] },
+    { e: '🐘', kg: 5000, f: ['слон', 'слона', 'слонов'] },
+    { e: '🦖', kg: 8000, f: ['тираннозавр', 'тираннозавра', 'тираннозавров'] },
+    { e: '🚌', kg: 12000, f: ['автобус', 'автобуса', 'автобусов'] },
+    { e: '🐋', kg: 150000, f: ['синий кит', 'синих кита', 'синих китов'] },
+    { e: '✈️', kg: 180000, f: ['самолёт Boeing 747', 'самолёта Boeing 747', 'самолётов Boeing 747'] },
+    { e: '🗽', kg: 204000, f: ['статуя Свободы', 'статуи Свободы', 'статуй Свободы'] },
+    { e: '🚀', kg: 2900000, f: ['ракета «Сатурн-5»', 'ракеты «Сатурн-5»', 'ракет «Сатурн-5»'] },
+    { e: '🗼', kg: 4000000, f: ['токийская башня', 'токийские башни', 'токийских башен'] },
+    { e: '🚢', kg: 100000000, f: ['круизный лайнер', 'круизных лайнера', 'круизных лайнеров'] },
+    { e: '🦟', kg: 2.5e-06, f: ['комар', 'комара', 'комаров'] },
+    { e: '❄️', kg: 3e-06, f: ['снежинка', 'снежинки', 'снежинок'] },
+    { e: '🐞', kg: 3e-05, f: ['божья коровка', 'божьи коровки', 'божьих коровок'] },
+    { e: '💎', kg: 0.0002, f: ['бриллиант', 'бриллианта', 'бриллиантов'] },
+    { e: '🦗', kg: 0.0004, f: ['сверчок', 'сверчка', 'сверчков'] },
+    { e: '🦋', kg: 0.0005, f: ['бабочка', 'бабочки', 'бабочек'] },
+    { e: '🐛', kg: 0.001, f: ['гусеница', 'гусеницы', 'гусениц'] },
+    { e: '🦷', kg: 0.0015, f: ['зуб', 'зуба', 'зубов'] },
+    { e: '🎈', kg: 0.003, f: ['воздушный шарик', 'воздушных шарика', 'воздушных шариков'] },
+    { e: '💍', kg: 0.005, f: ['кольцо', 'кольца', 'колец'] },
+    { e: '👁️', kg: 0.007, f: ['глаз', 'глаза', 'глаз'] },
+    { e: '✏️', kg: 0.007, f: ['карандаш', 'карандаша', 'карандашей'] },
+    { e: '🖊️', kg: 0.01, f: ['ручка', 'ручки', 'ручек'] },
+    { e: '🔑', kg: 0.01, f: ['ключ', 'ключа', 'ключей'] },
+    { e: '🐌', kg: 0.01, f: ['улитка', 'улитки', 'улиток'] },
+    { e: '🌰', kg: 0.01, f: ['каштан', 'каштана', 'каштанов'] },
+    { e: '🧽', kg: 0.01, f: ['губка', 'губки', 'губок'] },
+    { e: '🍁', kg: 0.002, f: ['кленовый лист', 'кленовых листа', 'кленовых листьев'] },
+    { e: '🌹', kg: 0.025, f: ['роза', 'розы', 'роз'] },
+    { e: '🔋', kg: 0.025, f: ['батарейка', 'батарейки', 'батареек'] },
+    { e: '🦇', kg: 0.03, f: ['летучая мышь', 'летучие мыши', 'летучих мышей'] },
+    { e: '🐦', kg: 0.03, f: ['воробей', 'воробья', 'воробьёв'] },
+    { e: '🐸', kg: 0.03, f: ['лягушка', 'лягушки', 'лягушек'] },
+    { e: '🍣', kg: 0.03, f: ['суши', 'суши', 'суши'] },
+    { e: '🦐', kg: 0.02, f: ['креветка', 'креветки', 'креветок'] },
+    { e: '🦎', kg: 0.02, f: ['ящерица', 'ящерицы', 'ящериц'] },
+    { e: '🌶️', kg: 0.02, f: ['перец чили', 'перца чили', 'перцов чили'] },
+    { e: '🧵', kg: 0.02, f: ['катушка ниток', 'катушки ниток', 'катушек ниток'] },
+    { e: '🐤', kg: 0.04, f: ['цыплёнок', 'цыплёнка', 'цыплят'] },
+    { e: '💡', kg: 0.04, f: ['лампочка', 'лампочки', 'лампочек'] },
+    { e: '🍄', kg: 0.05, f: ['мухомор', 'мухомора', 'мухоморов'] },
+    { e: '🧦', kg: 0.05, f: ['носок', 'носка', 'носков'] },
+    { e: '🥐', kg: 0.06, f: ['круассан', 'круассана', 'круассанов'] },
+    { e: '🥝', kg: 0.08, f: ['киви', 'киви', 'киви'] },
+    { e: '🧼', kg: 0.1, f: ['кусок мыла', 'куска мыла', 'кусков мыла'] },
+    { e: '🧢', kg: 0.1, f: ['кепка', 'кепки', 'кепок'] },
+    { e: '🕯️', kg: 0.1, f: ['свеча', 'свечи', 'свечей'] },
+    { e: '🧲', kg: 0.1, f: ['магнит', 'магнита', 'магнитов'] },
+    { e: '🧻', kg: 0.1, f: ['рулон туалетной бумаги', 'рулона туалетной бумаги', 'рулонов туалетной бумаги'] },
+    { e: '🍟', kg: 0.1, f: ['порция картошки фри', 'порции картошки фри', 'порций картошки фри'] },
+    { e: '🍦', kg: 0.1, f: ['рожок мороженого', 'рожка мороженого', 'рожков мороженого'] },
+    { e: '🐹', kg: 0.15, f: ['хомяк', 'хомяка', 'хомяков'] },
+    { e: '🍑', kg: 0.15, f: ['персик', 'персика', 'персиков'] },
+    { e: '🍅', kg: 0.15, f: ['помидор', 'помидора', 'помидоров'] },
+    { e: '🌭', kg: 0.15, f: ['хот-дог', 'хот-дога', 'хот-догов'] },
+    { e: '🍗', kg: 0.15, f: ['куриная ножка', 'куриные ножки', 'куриных ножек'] },
+    { e: '🔦', kg: 0.15, f: ['фонарик', 'фонарика', 'фонариков'] },
+    { e: '🍰', kg: 0.15, f: ['кусок торта', 'куска торта', 'кусков торта'] },
+    { e: '⚾', kg: 0.145, f: ['бейсбольный мяч', 'бейсбольных мяча', 'бейсбольных мячей'] },
+    { e: '🎱', kg: 0.17, f: ['бильярдный шар', 'бильярдных шара', 'бильярдных шаров'] },
+    { e: '🍐', kg: 0.18, f: ['груша', 'груши', 'груш'] },
+    { e: '🥒', kg: 0.2, f: ['огурец', 'огурца', 'огурцов'] },
+    { e: '👕', kg: 0.2, f: ['футболка', 'футболки', 'футболок'] },
+    { e: '🧣', kg: 0.2, f: ['шарф', 'шарфа', 'шарфов'] },
+    { e: '🌮', kg: 0.2, f: ['тако', 'тако', 'тако'] },
+    { e: '🧀', kg: 0.2, f: ['кусок сыра', 'куска сыра', 'кусков сыра'] },
+    { e: '🎩', kg: 0.25, f: ['цилиндр', 'цилиндра', 'цилиндров'] },
+    { e: '🌽', kg: 0.25, f: ['кукурузный початок', 'кукурузных початка', 'кукурузных початков'] },
+    { e: '🥖', kg: 0.25, f: ['багет', 'багета', 'багетов'] },
+    { e: '🥛', kg: 0.25, f: ['стакан молока', 'стакана молока', 'стаканов молока'] },
+    { e: '🏐', kg: 0.27, f: ['волейбольный мяч', 'волейбольных мяча', 'волейбольных мячей'] },
+    { e: '🥭', kg: 0.3, f: ['манго', 'манго', 'манго'] },
+    { e: '🍆', kg: 0.3, f: ['баклажан', 'баклажана', 'баклажанов'] },
+    { e: '🥩', kg: 0.3, f: ['стейк', 'стейка', 'стейков'] },
+    { e: '🧸', kg: 0.3, f: ['плюшевый мишка', 'плюшевых мишки', 'плюшевых мишек'] },
+    { e: '☕', kg: 0.35, f: ['чашка кофе', 'чашки кофе', 'чашек кофе'] },
+    { e: '🥊', kg: 0.35, f: ['боксёрская перчатка', 'боксёрские перчатки', 'боксёрских перчаток'] },
+    { e: '🐀', kg: 0.4, f: ['крыса', 'крысы', 'крыс'] },
+    { e: '🐿️', kg: 0.4, f: ['белка', 'белки', 'белок'] },
+    { e: '🦜', kg: 0.4, f: ['попугай', 'попугая', 'попугаев'] },
+    { e: '🍞', kg: 0.4, f: ['буханка хлеба', 'буханки хлеба', 'буханок хлеба'] },
+    { e: '🥫', kg: 0.4, f: ['банка консервов', 'банки консервов', 'банок консервов'] },
+    { e: '☂️', kg: 0.4, f: ['зонт', 'зонта', 'зонтов'] },
+    { e: '🎻', kg: 0.45, f: ['скрипка', 'скрипки', 'скрипок'] },
+    { e: '🍯', kg: 0.5, f: ['горшочек мёда', 'горшочка мёда', 'горшочков мёда'] },
+    { e: '🦀', kg: 0.5, f: ['краб', 'краба', 'крабов'] },
+    { e: '🔧', kg: 0.5, f: ['гаечный ключ', 'гаечных ключа', 'гаечных ключей'] },
+    { e: '📷', kg: 0.6, f: ['фотоаппарат', 'фотоаппарата', 'фотоаппаратов'] },
+    { e: '🍺', kg: 0.6, f: ['кружка пива', 'кружки пива', 'кружек пива'] },
+    { e: '🏀', kg: 0.62, f: ['баскетбольный мяч', 'баскетбольных мяча', 'баскетбольных мячей'] },
+    { e: '🔨', kg: 0.8, f: ['молоток', 'молотка', 'молотков'] },
+    { e: '🦔', kg: 1, f: ['ёж', 'ежа', 'ежей'] },
+    { e: '🦞', kg: 1, f: ['омар', 'омара', 'омаров'] },
+    { e: '👢', kg: 1, f: ['сапог', 'сапога', 'сапог'] },
+    { e: '🎺', kg: 1, f: ['труба', 'трубы', 'труб'] },
+    { e: '📻', kg: 1, f: ['радиоприёмник', 'радиоприёмника', 'радиоприёмников'] },
+    { e: '🦆', kg: 1.2, f: ['утка', 'утки', 'уток'] },
+    { e: '🍾', kg: 1.3, f: ['бутылка шампанского', 'бутылки шампанского', 'бутылок шампанского'] },
+    { e: '🧠', kg: 1.4, f: ['человеческий мозг', 'человеческих мозга', 'человеческих мозгов'] },
+    { e: '🎒', kg: 1.5, f: ['рюкзак', 'рюкзака', 'рюкзаков'] },
+    { e: '🍍', kg: 1.5, f: ['ананас', 'ананаса', 'ананасов'] },
+    { e: '🎂', kg: 1.5, f: ['торт', 'торта', 'тортов'] },
+    { e: '🦉', kg: 1.5, f: ['сова', 'совы', 'сов'] },
+    { e: '🐍', kg: 2, f: ['змея', 'змеи', 'змей'] },
+    { e: '🐓', kg: 3, f: ['петух', 'петуха', 'петухов'] },
+    { e: '👶', kg: 3.4, f: ['новорождённый', 'новорождённых', 'новорождённых'] },
+    { e: '🎸', kg: 3.5, f: ['гитара', 'гитары', 'гитар'] },
+    { e: '🛹', kg: 3, f: ['скейтборд', 'скейтборда', 'скейтбордов'] },
+    { e: '🐇', kg: 3, f: ['кролик', 'кролика', 'кроликов'] },
+    { e: '🎷', kg: 3, f: ['саксофон', 'саксофона', 'саксофонов'] },
+    { e: '🛴', kg: 4, f: ['самокат', 'самоката', 'самокатов'] },
+    { e: '🦅', kg: 4.5, f: ['орёл', 'орла', 'орлов'] },
+    { e: '🥁', kg: 5, f: ['барабан', 'барабана', 'барабанов'] },
+    { e: '🧯', kg: 5, f: ['огнетушитель', 'огнетушителя', 'огнетушителей'] },
+    { e: '🏺', kg: 5, f: ['амфора', 'амфоры', 'амфор'] },
+    { e: '🦊', kg: 6, f: ['лиса', 'лисы', 'лис'] },
+    { e: '🧰', kg: 8, f: ['ящик с инструментами', 'ящика с инструментами', 'ящиков с инструментами'] },
+    { e: '🐒', kg: 10, f: ['обезьяна', 'обезьяны', 'обезьян'] },
+    { e: '📺', kg: 10, f: ['телевизор', 'телевизора', 'телевизоров'] },
+    { e: '🦢', kg: 10, f: ['лебедь', 'лебедя', 'лебедей'] },
+    { e: '🛒', kg: 10, f: ['тележка из супермаркета', 'тележки из супермаркета', 'тележек из супермаркета'] },
+    { e: '🐙', kg: 10, f: ['осьминог', 'осьминога', 'осьминогов'] },
+    { e: '🧒', kg: 25, f: ['ребёнок', 'ребёнка', 'детей'] },
+    { e: '🚪', kg: 25, f: ['дверь', 'двери', 'дверей'] },
+    { e: '🛶', kg: 30, f: ['каноэ', 'каноэ', 'каноэ'] },
+    { e: '🐺', kg: 40, f: ['волк', 'волка', 'волков'] },
+    { e: '🛋️', kg: 40, f: ['диван', 'дивана', 'диванов'] },
+    { e: '🐆', kg: 60, f: ['леопард', 'леопарда', 'леопардов'] },
+    { e: '🐐', kg: 60, f: ['коза', 'козы', 'коз'] },
+    { e: '🛏️', kg: 60, f: ['кровать', 'кровати', 'кроватей'] },
+    { e: '🐑', kg: 70, f: ['овца', 'овцы', 'овец'] },
+    { e: '🦘', kg: 70, f: ['кенгуру', 'кенгуру', 'кенгуру'] },
+    { e: '⛄', kg: 100, f: ['снеговик', 'снеговика', 'снеговиков'] },
+    { e: '🛵', kg: 100, f: ['скутер', 'скутера', 'скутеров'] },
+    { e: '🛁', kg: 100, f: ['чугунная ванна', 'чугунные ванны', 'чугунных ванн'] },
+    { e: '🛢️', kg: 136, f: ['бочка нефти', 'бочки нефти', 'бочек нефти'] },
+    { e: '🦌', kg: 150, f: ['олень', 'оленя', 'оленей'] },
+    { e: '🦙', kg: 150, f: ['лама', 'ламы', 'лам'] },
+    { e: '🦍', kg: 160, f: ['горилла', 'гориллы', 'горилл'] },
+    { e: '🐬', kg: 200, f: ['дельфин', 'дельфина', 'дельфинов'] },
+    { e: '🐖', kg: 200, f: ['свинья', 'свиньи', 'свиней'] },
+    { e: '🏍️', kg: 200, f: ['мотоцикл', 'мотоцикла', 'мотоциклов'] },
+    { e: '🐅', kg: 220, f: ['тигр', 'тигра', 'тигров'] },
+    { e: '🐊', kg: 300, f: ['крокодил', 'крокодила', 'крокодилов'] },
+    { e: '🌴', kg: 300, f: ['пальма', 'пальмы', 'пальм'] },
+    { e: '🦓', kg: 350, f: ['зебра', 'зебры', 'зебр'] },
+    { e: '🌲', kg: 500, f: ['ель', 'ели', 'елей'] },
+    { e: '🐫', kg: 600, f: ['верблюд', 'верблюда', 'верблюдов'] },
+    { e: '🐃', kg: 800, f: ['буйвол', 'буйвола', 'буйволов'] },
+    { e: '🛩️', kg: 800, f: ['лёгкий самолёт', 'лёгких самолёта', 'лёгких самолётов'] },
+    { e: '🦈', kg: 1000, f: ['акула', 'акулы', 'акул'] },
+    { e: '🐂', kg: 1000, f: ['бык', 'быка', 'быков'] },
+    { e: '🔔', kg: 1000, f: ['церковный колокол', 'церковных колокола', 'церковных колоколов'] },
+    { e: '🛰️', kg: 1000, f: ['спутник', 'спутника', 'спутников'] },
+    { e: '🚤', kg: 1500, f: ['моторный катер', 'моторных катера', 'моторных катеров'] },
+    { e: '🚓', kg: 1800, f: ['полицейская машина', 'полицейские машины', 'полицейских машин'] },
+    { e: '🚑', kg: 3500, f: ['машина скорой помощи', 'машины скорой помощи', 'машин скорой помощи'] },
+    { e: '🌳', kg: 5000, f: ['дуб', 'дуба', 'дубов'] },
+    { e: '⛵', kg: 5000, f: ['парусная яхта', 'парусные яхты', 'парусных яхт'] },
+    { e: '🚜', kg: 6000, f: ['трактор', 'трактора', 'тракторов'] },
+    { e: '🚁', kg: 7000, f: ['вертолёт', 'вертолёта', 'вертолётов'] },
+    { e: '🚚', kg: 7500, f: ['грузовик', 'грузовика', 'грузовиков'] },
+    { e: '🗿', kg: 14000, f: ['моаи', 'моаи', 'моаи'] },
+    { e: '🚒', kg: 15000, f: ['пожарная машина', 'пожарные машины', 'пожарных машин'] },
+    { e: '🦕', kg: 25000, f: ['длинношеий динозавр', 'длинношеих динозавра', 'длинношеих динозавров'] },
+    { e: '🚛', kg: 36000, f: ['гружёная фура', 'гружёные фуры', 'гружёных фур'] },
+    { e: '🚂', kg: 100000, f: ['паровоз', 'паровоза', 'паровозов'] },
+    { e: '🏠', kg: 200000, f: ['кирпичный дом', 'кирпичных дома', 'кирпичных домов'] },
+    { e: '☁️', kg: 500000, f: ['облако', 'облака', 'облаков'] }
+  ];
+  ITEMS.forEach(function (it) { it.id = it.f[0]; });
+
+  var HINT_PENALTY = 0.75;
+  var MAX_ANGLE = 16;
+  var RM = false;
+  try { RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  function $(id) { return document.getElementById(id); }
+  var el = {
+    status: $('status'), stRound: $('stRound'), stTotal: $('stTotal'), stAvg: $('stAvg'),
+    progress: $('progress'), bar: $('progressBar'), stage: $('stage'),
+    beam: $('beam'), panL: $('panL'), panR: $('panR'), itemsL: $('itemsL'), itemsR: $('itemsR'), lblL: $('lblL'), lblR: $('lblR'), tools: $('tools'), restartBtn: $('restartBtn'), exitBtn: $('exitBtn'),
+    capL: $('capL'), capRCount: $('capRCount'), capRName: $('capRName'),
+    start: $('start'), play: $('play'), fin: $('final'),
+    best: $('best'), startBtn: $('startBtn'),
+    ask: $('ask'), guess: $('guess'), unit: $('unit'), weigh: $('weighBtn'), hintBtn: $('hintBtn'), hint: $('hint'),
+    result: $('result')
+  };
+
+  /* ---------- форматирование ---------- */
+  var nf0 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+  var nf1 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
+  var nf2 = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+  function fmt(n) { return nf0.format(n); }
+  function fmtNum(n) { return n >= 100 ? nf0.format(Math.round(n)) : n >= 10 ? nf1.format(n) : nf2.format(n); }
+  function fmtMass(kg) {
+    if (kg >= 1000) return fmtNum(kg / 1000) + ' т';
+    if (kg >= 1) return fmtNum(kg) + ' кг';
+    if (kg >= 0.001) return fmtNum(kg * 1000) + ' г';
+    return fmtNum(kg * 1000000) + ' мг';
+  }
+  function plural(n, f) {
+    n = Math.abs(n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return f[0];
+    if (m10 >= 2 && m10 <= 4 && !(m100 >= 12 && m100 <= 14)) return f[1];
+    return f[2];
+  }
+  function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  /* ---------- логика ---------- */
+  function accuracy(g, c) {
+    if (!(g > 0)) return 0;
+    var pct = Math.round(100 * Math.min(g, c) / Math.max(g, c));
+    if (g !== c && pct >= 100) pct = 99;
+    return pct;
+  }
+  function tiltFor(g, c) {
+    return MAX_ANGLE * Math.tanh(2.2 * Math.log10(g / c));
+  }
+  function loadSeen() {
+    try { return JSON.parse(localStorage.getItem('wiu-seen') || '[]') || []; } catch (e) { return []; }
+  }
+  function saveSeen(arr) {
+    try { localStorage.setItem('wiu-seen', JSON.stringify(arr.slice(-140))); } catch (e) {}
+  }
+  function pickPair(idx, total, used, seen) {
+    var prog = total > 1 ? idx / (total - 1) : 1;
+    var cap = 120 * Math.pow(2e6 / 120, prog);
+    var lo = Math.max(3, cap / 200);
+    var pool = [];
+    for (var i = 0; i < ITEMS.length; i++) {
+      for (var j = 0; j < ITEMS.length; j++) {
+        if (i === j) continue;
+        var r = ITEMS[i].kg / ITEMS[j].kg;
+        if (r >= lo && r <= cap) pool.push([ITEMS[i], ITEMS[j]]);
+      }
+    }
+    var tiers = [
+      function (p) { return !used[p[0].id] && !used[p[1].id] && !seen[p[0].id] && !seen[p[1].id]; },
+      function (p) { return !used[p[0].id] && !used[p[1].id] && !seen[p[0].id]; },
+      function (p) { return !used[p[0].id] && !used[p[1].id]; },
+      function (p) { return !used[p[0].id]; }
+    ];
+    var fresh = [];
+    for (var t = 0; t < tiers.length && !fresh.length; t++) fresh = pool.filter(tiers[t]);
+    if (!fresh.length) fresh = pool;
+    // сначала выбираем левый предмет равномерно, чтобы частые пары не перевешивали
+    var byA = {}, keys = [];
+    fresh.forEach(function (p) { if (!byA[p[0].id]) { byA[p[0].id] = []; keys.push(p[0].id); } byA[p[0].id].push(p); });
+    var list = byA[keys[Math.floor(Math.random() * keys.length)]];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  function rankFor(avg) {
+    if (avg >= 85) return 'Живые весы';
+    if (avg >= 70) return 'Метролог';
+    if (avg >= 55) return 'Кладовщик со стажем';
+    if (avg >= 40) return 'Продавец на рынке';
+    if (avg >= 25) return 'Покупатель с авоськой';
+    return 'Глазомер в отпуске';
+  }
+  function verdictFor(p) {
+    if (p >= 98) return 'В точку!';
+    if (p >= 90) return 'Почти идеально';
+    if (p >= 75) return 'Очень близко';
+    if (p >= 50) return 'Неплохо, но мимо';
+    if (p >= 20) return 'Далековато';
+    return 'Совсем мимо';
+  }
+  function pctClass(p) { return p >= 80 ? 'p-good' : p >= 50 ? 'p-warn' : 'p-bad'; }
+
+  /* ---------- сохранение рекорда ---------- */
+  function loadBest() {
+    try { return JSON.parse(localStorage.getItem('wiu-best') || '{}') || {}; } catch (e) { return {}; }
+  }
+  function saveBest(obj) {
+    try { localStorage.setItem('wiu-best', JSON.stringify(obj)); } catch (e) {}
+  }
+
+  /* ---------- весы: рисование и пружина ---------- */
+  var ang = 0, vel = 0, target = 0, raf = 0, lastT = 0;
+  var L = 140;
+  function draw() {
+    var rad = ang * Math.PI / 180, cs = Math.cos(rad), sn = Math.sin(rad);
+    el.beam.setAttribute('transform', 'rotate(' + ang.toFixed(3) + ' 210 70)');
+    el.panL.setAttribute('transform', 'translate(' + (210 - L * cs).toFixed(2) + ' ' + (70 - L * sn).toFixed(2) + ')');
+    el.panR.setAttribute('transform', 'translate(' + (210 + L * cs).toFixed(2) + ' ' + (70 + L * sn).toFixed(2) + ')');
+  }
+  function tick(now) {
+    var dt = Math.min(0.033, (now - lastT) / 1000);
+    lastT = now;
+    var k = 70, c = 5.2;
+    vel += (-k * (ang - target) - c * vel) * dt;
+    ang += vel * dt;
+    if (Math.abs(ang - target) < 0.02 && Math.abs(vel) < 0.05) {
+      ang = target; vel = 0; raf = 0; draw(); return;
+    }
+    draw();
+    raf = requestAnimationFrame(tick);
+  }
+  function setTarget(t) {
+    target = t;
+    if (RM) { ang = t; vel = 0; draw(); return; }
+    if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(tick); }
+  }
+  function snapTo(t) { ang = t; target = t; vel = 0; draw(); }
+
+  function glyph(it, x, y, s) {
+    if (it.draw === 'tennis') {
+      return '<g transform="translate(' + x.toFixed(1) + ' ' + (y - s * 0.42).toFixed(1) + ') scale(' + (s / 100).toFixed(3) + ')">' +
+        '<circle r="44" fill="#D5E43B" stroke="#9FB021" stroke-width="2"/>' +
+        '<path d="M-30 -31 Q-8 0 -30 31 M30 -31 Q8 0 30 31" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/></g>';
+    }
+    return '<text class="em" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + s + '">' + it.e + '</text>';
+  }
+  function setPanLabel(node, name) {
+    name = cap1(name);
+    var words = name.split(' '), lines = [name];
+    if (name.length > 13 && words.length > 1) {
+      var bestK = 1, bestD = 1e9;
+      for (var k = 1; k < words.length; k++) {
+        var d = Math.abs(words.slice(0, k).join(' ').length - words.slice(k).join(' ').length);
+        if (d < bestD) { bestD = d; bestK = k; }
+      }
+      lines = [words.slice(0, bestK).join(' '), words.slice(bestK).join(' ')];
+    }
+    node.innerHTML = lines.map(function (t, i) {
+      return '<text class="plabel" x="0" y="' + (160 + i * 17) + '">' + t + '</text>';
+    }).join('');
+  }
+  function setPanLabels(a, b) { setPanLabel(el.lblL, a.f[0]); setPanLabel(el.lblR, b.f[0]); }
+  function renderLeft(it) {
+    el.itemsL.innerHTML = glyph(it, 0, 100, 64);
+  }
+  function renderPile(n, it) {
+    if (!(n > 0)) {
+      el.itemsR.innerHTML = '<g class="ghost">' + glyph(it, 0, 100, 52) + '</g><text class="qbadge" x="0" y="46">?</text>';
+      return;
+    }
+    var vis = Math.min(n, 15);
+    var s = vis <= 1 ? 46 : vis <= 3 ? 38 : vis <= 6 ? 30 : vis <= 10 ? 25 : 21;
+    var perRow = Math.max(1, Math.floor(112 / (s * 0.92)));
+    var out = '';
+    for (var i = 0; i < vis; i++) {
+      var row = Math.floor(i / perRow), idx = i % perRow;
+      var rowCount = Math.min(perRow, vis - row * perRow);
+      var x = (idx - (rowCount - 1) / 2) * s * 0.95;
+      var y = 103 - row * s * 0.8;
+      out += glyph(it, x, y, s);
+    }
+    el.itemsR.innerHTML = out;
+  }
+  function setRightCaption(n, it) {
+    if (n > 0) {
+      el.capRCount.textContent = '× ' + fmt(n);
+      el.capRName.textContent = plural(n, it.f);
+    } else {
+      el.capRCount.textContent = '× ?';
+      el.capRName.textContent = it.f[2];
+    }
+  }
+
+  /* ---------- состояние игры ---------- */
+  var S = { total: 10, idx: 0, results: [], used: {}, cur: null };
+  var idleTimer = 0, idleDir = -1;
+
+  function show(phase) {
+    el.start.hidden = phase !== 'start';
+    el.play.hidden = phase !== 'play';
+    el.fin.hidden = phase !== 'final';
+    el.stage.hidden = phase === 'final';
+    el.status.hidden = phase !== 'play';
+    el.tools.hidden = phase !== 'play';
+    if (el.restartBtn._disarm) { el.restartBtn._disarm(); el.exitBtn._disarm(); }
+    el.progress.hidden = phase !== 'play';
+  }
+  function updateStatus() {
+    el.stRound.textContent = Math.min(S.idx + 1, S.total);
+    el.stTotal.textContent = S.total;
+    var n = S.results.length;
+    var sum = 0;
+    for (var i = 0; i < n; i++) sum += S.results[i].pct;
+    el.stAvg.textContent = n ? Math.round(sum / n) + '%' : '—';
+    var done = S.idx + (S.cur && S.cur.done ? 1 : 0);
+    el.bar.style.width = (done / S.total * 100) + '%';
+  }
+
+  function updateBest() {
+    var chosen = document.querySelector('input[name="rounds"]:checked');
+    var v = loadBest()[chosen ? chosen.value : '10'];
+    el.best.hidden = v == null;
+    if (v != null) el.best.textContent = 'Рекорд: ' + v + '%';
+  }
+  function restartGame() {
+    S.idx = 0; S.results = []; S.used = {}; S.cur = null;
+    show('play');
+    beginRound();
+  }
+  function armable(btn, label, armedLabel, action) {
+    var timer = 0;
+    function disarm() { btn.classList.remove('armed'); btn.textContent = label; clearTimeout(timer); }
+    btn._disarm = disarm;
+    btn.addEventListener('click', function () {
+      if (btn.classList.contains('armed') || !S.results.length) { disarm(); action(); return; }
+      btn.classList.add('armed');
+      btn.textContent = armedLabel;
+      timer = setTimeout(disarm, 3000);
+    });
+  }
+  function flipIdle() { idleDir *= -1; setTarget(idleDir * 5); }
+  function startIdle(kick) {
+    clearInterval(idleTimer);
+    if (RM) return;
+    if (kick) flipIdle();
+    idleTimer = setInterval(flipIdle, 1400);
+  }
+  function goStart() {
+    show('start');
+    var g = ITEMS.filter(function (i) { return i.f[0] === 'жираф'; })[0];
+    var t = ITEMS.filter(function (i) { return i.f[0] === 'теннисный мяч'; })[0];
+    el.capL.textContent = cap1(g.f[0]);
+    renderLeft(g);
+    setPanLabels(g, t);
+    renderPile(9, t);
+    el.capRCount.textContent = '× ?';
+    el.capRName.textContent = t.f[2];
+    snapTo(-5);
+    idleDir = -1;
+    startIdle(true);
+    updateBest();
+  }
+
+  function startGame() {
+    var chosen = document.querySelector('input[name="rounds"]:checked');
+    S.total = chosen ? parseInt(chosen.value, 10) : 10;
+    S.idx = 0; S.results = []; S.used = {}; S.cur = null;
+    clearInterval(idleTimer);
+    show('play');
+    beginRound();
+  }
+
+  function beginRound() {
+    var seenList = loadSeen(), seen = {};
+    seenList.forEach(function (k) { seen[k] = true; });
+    var pair = pickPair(S.idx, S.total, S.used, seen);
+    var a = pair[0], b = pair[1];
+    S.used[a.id] = true; S.used[b.id] = true;
+    seenList.push(a.id, b.id);
+    saveSeen(seenList);
+    S.cur = { a: a, b: b, c: Math.round(a.kg / b.kg), hint: false, done: false };
+    el.guess.value = '';
+    el.guess.disabled = false;
+    el.weigh.disabled = true;
+    el.ask.classList.remove('locked');
+    el.hint.hidden = true;
+    el.hintBtn.disabled = false;
+    el.hintBtn.textContent = 'Подсказка · −25%';
+    el.result.hidden = true;
+    el.result.innerHTML = '';
+    el.capL.textContent = cap1(a.f[0]);
+    renderLeft(a);
+    setPanLabels(a, b);
+    renderPile(0, b);
+    setRightCaption(0, b);
+    el.unit.textContent = b.f[2];
+    updateStatus();
+    setTarget(0);
+    var fine = true;
+    try { fine = window.matchMedia('(pointer: fine)').matches; } catch (e) {}
+    if (fine) { try { el.guess.focus({ preventScroll: true }); } catch (e) {} }
+  }
+
+  function currentGuess() {
+    var v = parseInt(el.guess.value, 10);
+    return isNaN(v) ? 0 : v;
+  }
+  function onInput() {
+    var v = el.guess.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 9);
+    if (v !== el.guess.value) el.guess.value = v;
+    var g = currentGuess();
+    el.weigh.disabled = !(g > 0);
+    var b = S.cur.b;
+    setRightCaption(g, b);
+    el.unit.textContent = plural(g > 0 ? g : 5, b.f);
+  }
+
+  function useHint() {
+    var cur = S.cur;
+    if (!cur || cur.done || cur.hint) return;
+    cur.hint = true;
+    el.hint.hidden = false;
+    el.hint.innerHTML = 'Подсказка: ' + cur.b.f[0] + ' весит <b>≈ ' + fmtMass(cur.b.kg) + '</b>. Итоговая точность раунда будет умножена на 0,75.';
+    el.hintBtn.disabled = true;
+    el.hintBtn.textContent = 'Подсказка использована';
+  }
+
+  function countUp(node, to) {
+    if (RM || to === 0) { node.textContent = to; return; }
+    var t0 = performance.now(), dur = 900;
+    function step(now) {
+      var p = Math.min(1, (now - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      node.textContent = Math.round(to * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function submit() {
+    var cur = S.cur;
+    if (!cur || cur.done) return;
+    var g = currentGuess();
+    if (!(g > 0)) return;
+    cur.done = true;
+    var c = cur.c;
+    var base = accuracy(g, c);
+    var pct = cur.hint ? Math.round(base * HINT_PENALTY) : base;
+    S.results.push({ a: cur.a, b: cur.b, g: g, c: c, pct: pct, hint: cur.hint });
+
+    el.guess.disabled = true;
+    el.ask.classList.add('locked');
+    el.hint.hidden = true;
+    renderPile(1, cur.b);
+    setTarget(g === c ? 0 : tiltFor(g, c));
+
+    var f = Math.max(g / c, c / g);
+    var diff;
+    if (g === c) diff = 'точно';
+    else {
+      var fv = f >= 10 ? Math.round(f) : Math.round(f * 10) / 10;
+      var isInt = Math.abs(fv - Math.round(fv)) < 1e-9;
+      var word = isInt ? plural(Math.round(fv), ['раз', 'раза', 'раз']) : 'раза';
+      diff = 'в ' + (isInt ? fmt(fv) : nf1.format(fv)) + ' ' + word + (g < c ? ' меньше' : ' больше');
+    }
+    var dirText = g === c ? 'Весы в равновесии.'
+      : f < 1.03 ? 'Весы почти в равновесии.'
+      : g < c ? 'Мало: левая чаша перевесила.'
+      : 'Много: правая чаша перевесила.';
+
+    var html = '' +
+      '<div class="res-top">' +
+        '<div class="pct ' + pctClass(pct) + '"><span id="pctNum">0</span><small>%</small></div>' +
+        '<div class="res-txt"><h2>' + verdictFor(base) + '</h2><p>' + dirText + '</p></div>' +
+      '</div>' +
+      '<dl class="facts">' +
+        '<dt>Правильный ответ</dt><dd>' + fmt(c) + '</dd>' +
+        '<dt>Ваш ответ</dt><dd>' + fmt(g) + '</dd>' +
+        '<dt>Отличие</dt><dd>' + diff + '</dd>' +
+        '<dt>Массы</dt><dd>' + cur.a.f[0] + ' ≈ ' + fmtMass(cur.a.kg) + '<br>' + cur.b.f[0] + ' ≈ ' + fmtMass(cur.b.kg) + '</dd>' +
+        (cur.hint ? '<dt>Подсказка</dt><dd>' + base + '% × 0,75</dd>' : '') +
+      '</dl>' +
+      '<button class="btn primary" id="nextBtn" type="button">' + (S.idx + 1 >= S.total ? 'Показать итоги' : 'Следующий раунд') + '</button>';
+    el.result.innerHTML = html;
+    el.result.hidden = false;
+    countUp($('pctNum'), pct);
+    updateStatus();
+    var nb = $('nextBtn');
+    try { nb.focus({ preventScroll: true }); } catch (e) {}
+    try { el.result.scrollIntoView({ block: 'nearest', behavior: RM ? 'auto' : 'smooth' }); } catch (e) {}
+  }
+
+  function next() {
+    S.idx++;
+    if (S.idx >= S.total) finish(); else beginRound();
+  }
+
+  function finish() {
+    var n = S.results.length, sum = 0, hints = 0;
+    S.results.forEach(function (r) { sum += r.pct; if (r.hint) hints++; });
+    var avg = Math.round(sum / n);
+    var best = loadBest(), key = String(S.total);
+    var record = best[key] == null || avg > best[key];
+    var prev = best[key];
+    if (record) { best[key] = avg; saveBest(best); }
+
+    var rows = S.results.map(function (r) {
+      return '<li class="row ' + pctClass(r.pct) + '">' +
+        '<div class="row-t" style="color:var(--ink)"><span class="emo">' + r.a.e + '</span> ' + cap1(r.a.f[0]) + ' ↔ <span class="emo">' + r.b.e + '</span> ' + r.b.f[0] + '</div>' +
+        '<div class="row-p">' + r.pct + '%</div>' +
+        '<div class="row-n">ваш ответ ' + fmt(r.g) + ', верно ' + fmt(r.c) + (r.hint ? ', с подсказкой' : '') + '</div>' +
+        '<div class="row-bar"><i style="--p:' + r.pct + '%"></i></div>' +
+        '</li>';
+    }).join('');
+
+    var recLine = record
+      ? (prev == null ? 'Первый результат в режиме на ' + S.total + ' раундов.' : 'Новый рекорд. Прошлый был ' + prev + '%.')
+      : 'Рекорд в этом режиме: ' + best[key] + '%.';
+
+    el.fin.innerHTML =
+      '<div class="fin-top">' +
+        '<p class="eyebrow">Итоги · ' + S.total + ' ' + plural(S.total, ['раунд', 'раунда', 'раундов']) + '</p>' +
+        '<div class="pct ' + pctClass(avg) + '"><span>' + avg + '</span><small>%</small></div>' +
+        '<h2 class="rank">' + rankFor(avg) + '</h2>' +
+        '<p class="sub">Средняя точность. ' + recLine + (hints ? ' Подсказок использовано: ' + hints + '.' : '') + '</p>' +
+      '</div>' +
+      '<ol class="rows">' + rows + '</ol>' +
+      '<div class="actions"><button class="btn primary" id="againBtn" type="button">Сыграть ещё раз</button>' +
+      '<button class="btn ghost" id="menuBtn" type="button">В начало</button></div>';
+    show('final');
+    setTarget(0);
+    try { window.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' }); } catch (e) {}
+  }
+
+  /* ---------- события ---------- */
+  el.startBtn.addEventListener('click', startGame);
+  el.guess.addEventListener('input', onInput);
+  el.guess.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  el.weigh.addEventListener('click', submit);
+  el.hintBtn.addEventListener('click', useHint);
+  document.addEventListener('pointerdown', function (e) {
+    if (document.activeElement === el.guess && !e.target.closest('#guess, button, label')) el.guess.blur();
+  });
+  el.result.addEventListener('click', function (e) { if (e.target.closest('#nextBtn')) next(); });
+  el.fin.addEventListener('click', function (e) {
+    if (e.target.closest('#againBtn')) restartGame();
+    else if (e.target.closest('#menuBtn')) goStart();
+  });
+
+  armable(el.restartBtn, 'Заново', 'Точно заново?', restartGame);
+  armable(el.exitBtn, 'В лобби', 'Точно выйти?', goStart);
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="rounds"]'), function (r) { r.addEventListener('change', function () { updateBest(); if (!el.start.hidden) startIdle(true); }); });
+
+  goStart();
+})();
+</script>
+
+</body></html>
